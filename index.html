@@ -94,6 +94,7 @@
     position:relative; z-index:3;
     display:flex; align-items:center; justify-content:space-between;
     padding:22px clamp(20px,4vw,56px) 6px;
+    flex-wrap:wrap; gap:12px;
   }
   .brand{display:flex; align-items:center; gap:10px; font-weight:800; font-size:19px; letter-spacing:-.01em;}
   .brand .mark{
@@ -323,9 +324,16 @@
 
 <header class="topbar wrap" style="max-width:1180px; margin:0 auto;">
   <div class="brand"><span class="mark"></span> Aurafy</div>
-  <div class="search glass">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-    Search songs, artists, albums
+  <div style="display:flex; align-items:center; gap:10px;">
+    <div class="search glass">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      Search songs, artists, albums
+    </div>
+    <button id="importBtn" class="glass" style="display:flex; align-items:center; gap:7px; padding:9px 16px; font-size:13.5px; font-weight:700; color:var(--ink); border:1px solid var(--glass-edge-dim); cursor:pointer; font-family:inherit;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+      Import
+    </button>
+    <input type="file" id="fileInput" accept="audio/*" multiple hidden>
   </div>
 </header>
 
@@ -384,6 +392,8 @@
     <footer>Aurafy — a concept music interface. Liquid glass, cover flow, and a floating dock.</footer>
   </div>
 </main>
+
+<audio id="audioEl" hidden></audio>
 
 <div class="dockwrap">
   <nav class="dock" id="dock">
@@ -527,6 +537,9 @@
   const nowArtist = document.getElementById('nowArtist');
   const nowArt    = document.getElementById('nowArt');
   const nowDisc   = document.getElementById('nowDisc');
+  const audioEl   = document.getElementById('audioEl');
+  const importBtn = document.getElementById('importBtn');
+  const fileInput = document.getElementById('fileInput');
 
   let volume = 0.7;
   volFill.style.inset = `0 ${(1-volume)*100}%  0 0`;
@@ -615,26 +628,47 @@
     const al = albums[current];
     pauseOffset = 0;
     nowTitle.textContent = al.song;
-    nowArtist.innerHTML = `${al.a} — from the album <em style="font-style:normal;color:var(--ink);">${al.t}</em>`;
+    nowArtist.innerHTML = al.isImported
+      ? `${al.a} <span style="opacity:.6;">· imported from your files</span>`
+      : `${al.a} — from the album <em style="font-style:normal;color:var(--ink);">${al.t}</em>`;
     nowArt.className = 'art';
     nowArt.style.background = '';
-    // swap art gradient class
     ['p1','p2','p3','p4','p5','p6'].forEach(c=>nowArt.classList.remove(c));
     nowArt.classList.add(al.p);
     timeElapsed.textContent = '0:00';
-    timeRemain.textContent = '−' + fmt(al.dur);
+
+    if(al.isImported){
+      audioEl.src = al.fileUrl;
+      audioEl.onloadedmetadata = ()=>{
+        al.dur = audioEl.duration || al.dur;
+        timeRemain.textContent = '−' + fmt(al.dur);
+      };
+      timeRemain.textContent = '−' + fmt(al.dur || 0);
+    } else {
+      timeRemain.textContent = '−' + fmt(al.dur);
+    }
     seekFill.style.inset = '0 100% 0 0';
+
     if(isPlaying || autoplay){
       playTrack();
     }
   }
 
   function playTrack(){
-    ensureCtx();
-    if(audioCtx.state === 'suspended') audioCtx.resume();
-    stopVoices();
-    startVoices(albums[current]);
-    trackStart = audioCtx.currentTime - pauseOffset;
+    const al = albums[current];
+    stopVoices(); // always clear synth voices when (re)starting
+
+    if(al.isImported){
+      if(audioEl.src !== al.fileUrl) audioEl.src = al.fileUrl;
+      audioEl.currentTime = pauseOffset;
+      audioEl.volume = volume;
+      audioEl.play();
+    } else {
+      ensureCtx();
+      if(audioCtx.state === 'suspended') audioCtx.resume();
+      startVoices(al);
+      trackStart = audioCtx.currentTime - pauseOffset;
+    }
     isPlaying = true;
     playIcon.setAttribute('d', ICON_PAUSE);
     nowDisc.style.animationPlayState = 'running';
@@ -642,9 +676,14 @@
   }
 
   function pauseTrack(){
-    if(!audioCtx) return;
-    pauseOffset = audioCtx.currentTime - trackStart;
-    stopVoices();
+    const al = albums[current];
+    if(al.isImported){
+      pauseOffset = audioEl.currentTime;
+      audioEl.pause();
+    } else if(audioCtx){
+      pauseOffset = audioCtx.currentTime - trackStart;
+      stopVoices();
+    }
     isPlaying = false;
     playIcon.setAttribute('d', ICON_PLAY);
     nowDisc.style.animationPlayState = 'paused';
@@ -654,15 +693,16 @@
   function tick(){
     if(!isPlaying) return;
     const al = albums[current];
-    const elapsed = audioCtx.currentTime - trackStart;
-    if(elapsed >= al.dur){
+    const elapsed = al.isImported ? audioEl.currentTime : (audioCtx.currentTime - trackStart);
+    const dur = al.dur || 1;
+    if(elapsed >= dur - 0.15){
       loadTrack(current + 1, true);
       return;
     }
-    const pct = elapsed / al.dur;
+    const pct = elapsed / dur;
     seekFill.style.inset = `0 ${(1-pct)*100}% 0 0`;
     timeElapsed.textContent = fmt(elapsed);
-    timeRemain.textContent = '−' + fmt(al.dur - elapsed);
+    timeRemain.textContent = '−' + fmt(dur - elapsed);
     rafId = requestAnimationFrame(tick);
   }
 
@@ -680,7 +720,9 @@
     seekFill.style.inset = `0 ${(1-pct)*100}% 0 0`;
     timeElapsed.textContent = fmt(pauseOffset);
     timeRemain.textContent = '−' + fmt(al.dur - pauseOffset);
-    if(isPlaying){
+    if(al.isImported){
+      audioEl.currentTime = pauseOffset;
+    } else if(isPlaying){
       ensureCtx();
       trackStart = audioCtx.currentTime - pauseOffset;
     }
@@ -691,9 +733,52 @@
     const rect = volBar.getBoundingClientRect();
     volume = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
     volFill.style.inset = `0 ${(1-volume)*100}% 0 0`;
+    audioEl.volume = volume;
     if(masterGain) masterGain.gain.setTargetAtTime(volume, audioCtx.currentTime, 0.05);
   }
   volBar.addEventListener('click', (e)=> setVolume(e.clientX));
+
+  /* ---------- Import from device ---------- */
+  const importPalettes = ['p1','p2','p3','p4','p5','p6'];
+
+  importBtn.addEventListener('click', ()=> fileInput.click());
+
+  fileInput.addEventListener('change', (e)=>{
+    const files = [...e.target.files];
+    if(!files.length) return;
+
+    let firstNewIndex = null;
+    files.forEach((file, idx)=>{
+      const url = URL.createObjectURL(file);
+      const name = file.name.replace(/\.[^/.]+$/, '');
+      const pal = importPalettes[albums.length % importPalettes.length];
+      const track = {
+        song: name,
+        t: 'Imported',
+        a: 'Your files',
+        p: pal,
+        isImported: true,
+        fileUrl: url,
+        dur: 0 // filled in once metadata loads
+      };
+      const trackIndex = albums.length;
+      albums.push(track);
+      if(idx === 0) firstNewIndex = trackIndex;
+
+      // add a Cover Flow tile for it
+      const el = document.createElement('div');
+      el.className = 'cf-item';
+      el.dataset.i = trackIndex;
+      el.style.cursor = 'pointer';
+      el.innerHTML = `<div class="cf-art ${pal}"></div><div class="cf-reflect ${pal}"></div>
+        <div class="cf-name">${name}</div><div class="cf-sub">Your files — Imported</div>`;
+      el.addEventListener('click', ()=> loadTrack(trackIndex, true));
+      cf.appendChild(el);
+    });
+
+    fileInput.value = ''; // allow re-importing the same file later
+    if(firstNewIndex !== null) loadTrack(firstNewIndex, true);
+  });
 
   // initialize display for first track without starting audio
   timeRemain.textContent = '−' + fmt(albums[0].dur);
