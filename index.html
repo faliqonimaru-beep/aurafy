@@ -310,9 +310,137 @@
   @media (prefers-reduced-motion: reduce){
     .blob, .disc, .live-dot{animation:none !important;}
   }
+
+  /* ================= INTRO SPLASH ================= */
+  #introScreen{
+    position:fixed; inset:0; z-index:100;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 50% 42%, #12131c, var(--base) 70%);
+    animation: introOut .7s ease forwards;
+    animation-delay: 2.3s;
+  }
+  .intro-orb-wrap{
+    position:relative; width:150px; height:150px; margin-bottom:34px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .intro-orb{
+    position:absolute; width:112px; height:112px; border-radius:50%;
+    background:conic-gradient(from 0deg, var(--ice), var(--violet), var(--coral), var(--mint), var(--ice));
+    filter:blur(1px);
+    box-shadow:0 0 60px rgba(150,160,255,.55), 0 0 120px rgba(255,140,180,.25);
+    animation: orbMorph 2.6s ease-in-out infinite, orbSpin 5s linear infinite;
+  }
+  .intro-orb.ring{
+    width:150px; height:150px; background:none;
+    border:1.5px solid rgba(255,255,255,.28);
+    box-shadow:none; filter:none;
+    animation: ringPulse 2.2s ease-in-out infinite;
+  }
+  @keyframes orbMorph{
+    0%,100%{ border-radius:50% 50% 50% 50%; transform:scale(1); }
+    33%{ border-radius:60% 40% 55% 45%; transform:scale(1.08); }
+    66%{ border-radius:45% 55% 40% 60%; transform:scale(.94); }
+  }
+  @keyframes orbSpin{ to{ transform:rotate(360deg); } }
+  @keyframes ringPulse{
+    0%,100%{ transform:scale(.92); opacity:.5; }
+    50%{ transform:scale(1.12); opacity:.9; }
+  }
+  .intro-word{
+    font-size:26px; font-weight:800; letter-spacing:-.01em; color:var(--ink);
+    opacity:0; animation: introTextIn .7s ease forwards; animation-delay:.5s;
+  }
+  .intro-sub{
+    margin-top:6px; font-size:12.5px; letter-spacing:.14em; color:var(--ink-faint); font-weight:700;
+    opacity:0; animation: introTextIn .7s ease forwards; animation-delay:.75s;
+  }
+  @keyframes introTextIn{
+    from{ opacity:0; transform:translateY(8px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  @keyframes introOut{
+    to{ opacity:0; visibility:hidden; pointer-events:none; }
+  }
+
+  /* ================= LOGIN SCREEN ================= */
+  #loginScreen{
+    position:fixed; inset:0; z-index:90;
+    display:flex; align-items:center; justify-content:center;
+    padding:24px;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(140,150,255,.20), transparent 55%),
+      radial-gradient(circle at 82% 78%, rgba(255,140,180,.16), transparent 55%),
+      var(--base);
+    opacity:0;
+    animation: loginIn .6s ease forwards;
+    animation-delay:2.4s;
+  }
+  @keyframes loginIn{ from{ opacity:0; } to{ opacity:1; } }
+  .login-card{
+    width:100%; max-width:380px; padding:36px 30px;
+    text-align:center;
+  }
+  .login-title{ font-size:22px; font-weight:800; margin:0 0 6px; letter-spacing:-.01em; }
+  .login-sub{ font-size:13px; color:var(--ink-dim); margin:0 0 26px; }
+  .field-label{ display:block; text-align:left; font-size:12px; font-weight:700; color:var(--ink-dim); margin:14px 0 6px; }
+  .field{
+    width:100%; padding:12px 14px; border-radius:12px;
+    color:var(--ink); font-size:14px; font-family:inherit;
+    border:1px solid var(--glass-edge-dim);
+    background:rgba(255,255,255,.05);
+  }
+  .field::placeholder{ color:var(--ink-faint); }
+  .field:focus{ outline:none; border-color:rgba(255,255,255,.4); }
+  .login-btn{
+    width:100%; margin-top:22px; padding:13px; border:none; border-radius:12px;
+    font-family:inherit; font-size:14.5px; font-weight:800; cursor:pointer;
+    background:linear-gradient(180deg,#eef1ff,#c9d3ff); color:#12131a;
+    box-shadow:0 10px 26px rgba(140,150,255,.4), inset 0 1px 0 rgba(255,255,255,.9);
+  }
+  .guest-btn{
+    margin-top:14px; background:none; border:none; color:var(--ink-faint);
+    font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer;
+    text-decoration:underline; text-underline-offset:3px;
+  }
+
+  #appRoot{ transition:opacity .7s ease; }
 </style>
 </head>
 <body>
+
+<!-- ================= INTRO SPLASH ================= -->
+<div id="introScreen">
+  <div class="intro-orb-wrap">
+    <div class="intro-orb"></div>
+    <div class="intro-orb ring"></div>
+  </div>
+  <div class="intro-word">Aurafy</div>
+  <div class="intro-sub">tune in</div>
+</div>
+
+<!-- ================= LOGIN SCREEN ================= -->
+<div id="loginScreen">
+  <div class="login-card glass">
+    <div class="brand" style="justify-content:center; margin-bottom:22px;">
+      <span class="mark"></span> Aurafy
+    </div>
+    <h1 class="login-title">Welcome back</h1>
+    <p class="login-sub">Sign in to pick up where you left off.</p>
+
+    <form id="loginForm">
+      <label class="field-label">Email</label>
+      <input class="field glass" type="email" id="loginEmail" placeholder="you@example.com" required>
+
+      <label class="field-label">Password</label>
+      <input class="field glass" type="password" id="loginPass" placeholder="••••••••" required>
+
+      <button type="submit" class="login-btn">Sign in</button>
+    </form>
+    <button id="guestBtn" class="guest-btn">Continue as guest</button>
+  </div>
+</div>
+
+<div id="appRoot" style="opacity:0;">
 
 <div class="backdrop">
   <div class="blob b1"></div>
@@ -419,23 +547,33 @@
 </div>
 
 <script>
+  function artGradient(seed){
+    const h1 = (seed * 53) % 360;
+    const h2 = (h1 + 65 + (seed % 5) * 6) % 360;
+    const h3 = (h1 + 150 + (seed % 7) * 4) % 360;
+    const angle = (seed * 41) % 360;
+    return `conic-gradient(from ${angle}deg, hsl(${h1} 82% 66%), hsl(${h2} 78% 62%), hsl(${h3} 74% 58%), hsl(${h1} 82% 66%))`;
+  }
+
   const albums = [
-    {song:"Glass Horizon", t:"Refraction", a:"Nocturne Drift", p:"p1", root:220.00, chord:[0,7,12,16], wave:"sine",     dur:135},
-    {song:"Low Tide Radio", t:"Salt Water Halo", a:"Mira Coast", p:"p2", root:196.00, chord:[0,5,12,19], wave:"triangle", dur:158},
-    {song:"Departure Gate", t:"Low Orbit Diner", a:"Faux Satellite", p:"p3", root:174.61, chord:[0,7,10,15], wave:"sine",   dur:147},
-    {song:"Wind-Up Kites", t:"Paper Lanterns", a:"Kite Season", p:"p4", root:246.94, chord:[0,4,7,11], wave:"triangle",  dur:120},
-    {song:"Copper Static", t:"Amber Static", a:"Faye West", p:"p5", root:207.65, chord:[0,3,10,15], wave:"sawtooth",  dur:164},
-    {song:"Second Weather", t:"Second Weather", a:"Nocturne Drift", p:"p6", root:220.00, chord:[0,7,12,19], wave:"sine",  dur:152},
-    {song:"After Hours Line", t:"Cassava Room", a:"Two Coast Radio", p:"p2", root:185.00, chord:[0,5,9,14], wave:"triangle", dur:140},
-    {song:"Neon Lobby", t:"Ultraviolet Lobby", a:"Mira Coast", p:"p3", root:196.00, chord:[0,7,11,16], wave:"sine",     dur:130}
+    {song:"Glass Horizon", t:"Refraction", a:"Nocturne Drift", root:220.00, chord:[0,7,12,16], wave:"sine",     dur:135},
+    {song:"Low Tide Radio", t:"Salt Water Halo", a:"Mira Coast", root:196.00, chord:[0,5,12,19], wave:"triangle", dur:158},
+    {song:"Departure Gate", t:"Low Orbit Diner", a:"Faux Satellite", root:174.61, chord:[0,7,10,15], wave:"sine",   dur:147},
+    {song:"Wind-Up Kites", t:"Paper Lanterns", a:"Kite Season", root:246.94, chord:[0,4,7,11], wave:"triangle",  dur:120},
+    {song:"Copper Static", t:"Amber Static", a:"Faye West", root:207.65, chord:[0,3,10,15], wave:"sawtooth",  dur:164},
+    {song:"Second Weather", t:"Second Weather", a:"Nocturne Drift", root:220.00, chord:[0,7,12,19], wave:"sine",  dur:152},
+    {song:"After Hours Line", t:"Cassava Room", a:"Two Coast Radio", root:185.00, chord:[0,5,9,14], wave:"triangle", dur:140},
+    {song:"Neon Lobby", t:"Ultraviolet Lobby", a:"Mira Coast", root:196.00, chord:[0,7,11,16], wave:"sine",     dur:130}
   ];
+  albums.forEach((al,i)=> al.art = artGradient(i));
+
   const cf = document.getElementById('cfTrack');
   albums.forEach((al,i)=>{
     const el = document.createElement('div');
     el.className='cf-item';
     el.dataset.i = i;
     el.style.cursor='pointer';
-    el.innerHTML = `<div class="cf-art ${al.p}"></div><div class="cf-reflect ${al.p}"></div>
+    el.innerHTML = `<div class="cf-art" style="background:${al.art}"></div><div class="cf-reflect" style="background:${al.art}"></div>
       <div class="cf-name">${al.song}</div><div class="cf-sub">${al.a} — ${al.t}</div>`;
     el.addEventListener('click', ()=> loadTrack(i, true));
     cf.appendChild(el);
@@ -632,9 +770,7 @@
       ? `${al.a} <span style="opacity:.6;">· imported from your files</span>`
       : `${al.a} — from the album <em style="font-style:normal;color:var(--ink);">${al.t}</em>`;
     nowArt.className = 'art';
-    nowArt.style.background = '';
-    ['p1','p2','p3','p4','p5','p6'].forEach(c=>nowArt.classList.remove(c));
-    nowArt.classList.add(al.p);
+    nowArt.style.background = al.art;
     timeElapsed.textContent = '0:00';
 
     if(al.isImported){
@@ -739,8 +875,6 @@
   volBar.addEventListener('click', (e)=> setVolume(e.clientX));
 
   /* ---------- Import from device ---------- */
-  const importPalettes = ['p1','p2','p3','p4','p5','p6'];
-
   importBtn.addEventListener('click', ()=> fileInput.click());
 
   fileInput.addEventListener('change', (e)=>{
@@ -751,17 +885,17 @@
     files.forEach((file, idx)=>{
       const url = URL.createObjectURL(file);
       const name = file.name.replace(/\.[^/.]+$/, '');
-      const pal = importPalettes[albums.length % importPalettes.length];
+      const trackIndex = albums.length;
+      const art = artGradient(trackIndex + 31); // offset so imports don't repeat built-in hues
       const track = {
         song: name,
         t: 'Imported',
         a: 'Your files',
-        p: pal,
+        art,
         isImported: true,
         fileUrl: url,
         dur: 0 // filled in once metadata loads
       };
-      const trackIndex = albums.length;
       albums.push(track);
       if(idx === 0) firstNewIndex = trackIndex;
 
@@ -770,7 +904,7 @@
       el.className = 'cf-item';
       el.dataset.i = trackIndex;
       el.style.cursor = 'pointer';
-      el.innerHTML = `<div class="cf-art ${pal}"></div><div class="cf-reflect ${pal}"></div>
+      el.innerHTML = `<div class="cf-art" style="background:${art}"></div><div class="cf-reflect" style="background:${art}"></div>
         <div class="cf-name">${name}</div><div class="cf-sub">Your files — Imported</div>`;
       el.addEventListener('click', ()=> loadTrack(trackIndex, true));
       cf.appendChild(el);
@@ -781,8 +915,38 @@
   });
 
   // initialize display for first track without starting audio
+  nowArt.style.background = albums[0].art;
   timeRemain.textContent = '−' + fmt(albums[0].dur);
+
+  /* ================= INTRO + LOGIN FLOW ================= */
+  const introScreen = document.getElementById('introScreen');
+  const loginScreen = document.getElementById('loginScreen');
+  const appRoot      = document.getElementById('appRoot');
+  const loginForm    = document.getElementById('loginForm');
+  const guestBtn     = document.getElementById('guestBtn');
+
+  function enterApp(){
+    loginScreen.style.transition = 'opacity .5s ease';
+    loginScreen.style.opacity = '0';
+    setTimeout(()=>{ loginScreen.style.display = 'none'; }, 500);
+    appRoot.style.opacity = '1';
+  }
+
+  // Tap/click the intro to skip straight to login
+  introScreen.addEventListener('click', ()=>{
+    introScreen.style.animation = 'none';
+    introScreen.style.opacity = '0';
+    introScreen.style.pointerEvents = 'none';
+  });
+
+  loginForm.addEventListener('submit', (e)=>{
+    e.preventDefault();
+    enterApp();
+  });
+  guestBtn.addEventListener('click', enterApp);
 </script>
+
+</div><!-- /#appRoot -->
 
 </body>
 </html>
